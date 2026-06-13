@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Roteiro de Bolso · Curitiba · Sábado</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,900;1,9..144,400;1,9..144,600&family=Spectral:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<style>
+  :root{
+    --paper:#efe2c4;--paper-2:#e7d6b0;--ink:#33291d;--ink-soft:#5b4a36;
+    --route:#b34620;--pine:#28543f;--gold:#bd8a36;--plum:#8e3b62;
+    --line:rgba(51,41,29,.28);--shadow:rgba(51,41,29,.22);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html{scroll-behavior:smooth}
+  body{
+    font-family:'Spectral',Georgia,serif;color:var(--ink);
+    background:radial-gradient(120% 80% at 50% -10%, #f6ecd2 0%, var(--paper) 45%, var(--paper-2) 100%);
+    min-height:100vh;line-height:1.5;
+    padding:env(safe-area-inset-top) 0 calc(env(safe-area-inset-bottom) + 24px);
+    position:relative;overflow-x:hidden;
+  }
+  body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:60;opacity:.5;mix-blend-mode:multiply;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.35'/%3E%3C/svg%3E");}
+  .wrap{max-width:560px;margin:0 auto;padding:0 20px;position:relative;z-index:2}
+
+  header{text-align:center;padding:30px 0 14px}
+  .eyebrow{font-family:'Fraunces',serif;font-style:italic;color:var(--ink-soft);font-size:15px}
+  h1{font-family:'Fraunces',serif;font-weight:900;font-size:clamp(38px,11vw,58px);line-height:.92;color:var(--ink);margin:6px 0 4px;text-shadow:1px 1px 0 rgba(255,250,235,.5)}
+  h1 .accent{color:var(--route);display:block;font-size:.42em;font-weight:600;letter-spacing:.32em;text-transform:uppercase;margin-top:10px}
+  .sub{font-style:italic;color:var(--ink-soft);font-size:16px;margin-top:2px}
+
+  .rule{display:flex;align-items:center;gap:12px;margin:22px 4px 10px;color:var(--line)}
+  .rule::before,.rule::after{content:"";height:1px;flex:1;background:var(--line)}
+  .rule span{font-family:'Fraunces',serif;font-style:italic;color:var(--ink-soft);font-size:14px;white-space:nowrap}
+
+  /* ---- MAPA ---- */
+  .mapframe{border:2.5px solid var(--ink);border-radius:12px;padding:7px;background:rgba(255,250,235,.4);box-shadow:4px 5px 0 var(--shadow);position:relative}
+  #map{height:62vh;min-height:380px;width:100%;border-radius:7px;background:var(--paper-2)}
+  /* envelhecer os tiles */
+  .leaflet-tile-pane{filter:sepia(.5) saturate(.78) contrast(.96) brightness(1.03);}
+  .leaflet-container{background:#e7d6b0;font-family:'Spectral',serif}
+  .maphint{text-align:center;font-style:italic;color:var(--ink-soft);font-size:13px;margin:8px 2px 0}
+  .legend{display:flex;flex-wrap:wrap;gap:8px 16px;justify-content:center;margin:12px 2px 0;font-size:12.5px;color:var(--ink-soft)}
+  .legend i{display:inline-block;width:13px;height:13px;border-radius:50%;border:1.5px solid var(--ink);vertical-align:-1px;margin-right:5px}
+  .lg-route{background:var(--route)}.lg-eat{background:var(--pine)}.lg-shop{background:var(--gold)}.lg-home{background:var(--ink)}.lg-jp{background:var(--plum)}
+
+  /* pins customizados */
+  .pinmark{display:flex;align-items:center;justify-content:center;font-family:'Fraunces',serif;font-weight:900;color:#f6ecd2;border:2px solid #2a2118;border-radius:50% 50% 50% 4px;transform:rotate(45deg);box-shadow:1px 2px 3px rgba(0,0,0,.3)}
+  .pinmark span{transform:rotate(-45deg);font-size:14px;line-height:1}
+  .leaflet-popup-content-wrapper{background:#f3e7cb;border:1.5px solid var(--ink);border-radius:8px;box-shadow:3px 3px 0 var(--shadow)}
+  .leaflet-popup-content{margin:11px 13px;font-family:'Spectral',serif}
+  .pop b{font-family:'Fraunces',serif;font-weight:900;font-size:16px;color:var(--ink);display:block}
+  .pop small{color:var(--ink-soft);font-size:13px;display:block;margin:3px 0 7px}
+  .pop a{font-family:'Fraunces',serif;font-weight:600;font-size:13px;color:var(--route);text-decoration:none;border-bottom:1.5px solid var(--route)}
+  .leaflet-popup-tip{background:#f3e7cb}
+
+  /* ---- TRILHA ---- */
+  .route{position:relative;padding:6px 0}
+  .stop{position:relative;display:grid;grid-template-columns:54px 1fr;gap:14px;padding:0 0 24px 0}
+  .stop:not(:last-child)::before{content:"";position:absolute;left:26px;top:46px;bottom:-4px;border-left:3px dashed var(--route);opacity:.5}
+  .pin{width:52px;height:52px;border-radius:50%;flex:none;position:relative;z-index:3;background:radial-gradient(circle at 35% 30%, #f7eccf, var(--paper-2));border:2.5px solid var(--ink);display:flex;align-items:center;justify-content:center;font-family:'Fraunces',serif;font-weight:900;font-size:24px;color:var(--ink);box-shadow:2px 3px 0 var(--shadow)}
+  .pin.dot{background:var(--pine);color:#f6ecd2;border-color:var(--pine)}
+  .pin.dest{background:var(--route);color:#f8ecd6}
+  .time{font-family:'Fraunces',serif;font-weight:600;font-style:italic;color:var(--route);font-size:15px}
+  .stop h3{font-family:'Fraunces',serif;font-weight:900;font-size:22px;line-height:1.08;margin:1px 0 3px}
+  .hood{display:inline-block;font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--pine);font-weight:600;border:1px solid var(--pine);border-radius:20px;padding:1px 9px;margin-bottom:7px;background:rgba(40,84,63,.06)}
+  .note{font-size:15.5px;color:var(--ink-soft);margin-bottom:9px}
+  .note .star{color:var(--gold);font-style:italic;font-family:'Fraunces',serif}
+  .maplink{display:inline-flex;align-items:center;gap:6px;text-decoration:none;font-family:'Fraunces',serif;font-weight:600;font-size:13.5px;color:var(--ink);border:1.5px solid var(--ink);border-radius:6px;padding:5px 11px;background:rgba(255,250,235,.4);box-shadow:2px 2px 0 var(--shadow)}
+  .maplink:active{transform:translate(2px,2px);box-shadow:0 0 0}
+  .maplink svg{width:14px;height:14px}
+
+  /* ---- BLOCOS ---- */
+  section.block{border:2px solid var(--ink);border-radius:10px;padding:18px;margin:6px 0 18px;background:rgba(255,250,235,.32);box-shadow:3px 4px 0 var(--shadow)}
+  section.block h2{font-family:'Fraunces',serif;font-weight:900;font-size:21px;display:flex;align-items:center;gap:8px;margin-bottom:6px}
+  section.block .lead{font-style:italic;color:var(--ink-soft);font-size:14.5px;margin-bottom:12px}
+  .opt{display:grid;grid-template-columns:1fr auto;gap:4px 10px;padding:11px 0;border-bottom:1px dashed var(--line);align-items:start}
+  .opt:last-child{border-bottom:0;padding-bottom:0}
+  .opt .nm{font-family:'Fraunces',serif;font-weight:900;font-size:17px;grid-column:1}
+  .opt .cz{grid-column:1;font-size:14px;color:var(--ink-soft)}
+  .opt .badge{grid-column:2;grid-row:1/3;align-self:center;font-family:'Fraunces',serif;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;font-weight:600;padding:3px 8px;border-radius:20px;white-space:nowrap;text-align:center}
+  .b-route{background:rgba(40,84,63,.12);color:var(--pine);border:1px solid var(--pine)}
+  .b-home{background:rgba(189,138,54,.14);color:#8a5e1c;border:1px solid var(--gold)}
+  .opt .go{grid-column:1;margin-top:5px}
+  .opt .go a{font-family:'Fraunces',serif;font-weight:600;font-size:12.5px;color:var(--route);text-decoration:none;border-bottom:1.5px solid var(--route)}
+  .tip{font-size:13.5px;color:var(--ink-soft);font-style:italic;margin-top:12px;padding-top:11px;border-top:1px solid var(--line)}
+  .tip b{font-style:normal;color:var(--ink)}
+
+  ul.warn{list-style:none;display:flex;flex-direction:column;gap:10px;margin-top:6px}
+  ul.warn li{display:grid;grid-template-columns:22px 1fr;gap:8px;font-size:14.5px;color:var(--ink-soft)}
+  ul.warn li b{color:var(--ink)}
+
+  footer{text-align:center;margin-top:6px;color:var(--ink-soft)}
+  footer .sig{font-family:'Fraunces',serif;font-style:italic;font-size:15px}
+  footer .dot{color:var(--route)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow">Roteiro de bolso &middot; flanar sem pressa</div>
+    <h1>Curitiba<span class="accent">Sábado a pé</span></h1>
+    <div class="sub">do café no Centro ao pôr do sol no Jardim Botânico</div>
+  </header>
+
+  <div class="rule"><span>o mapa</span></div>
+  <div class="mapframe">
+    <div id="map"></div>
+  </div>
+  <div class="maphint">arraste pra mover &middot; pinça pra dar zoom &middot; toque num ponto pra abrir / navegar</div>
+  <div class="legend">
+    <span><i class="lg-route"></i>roteiro 1–7</span>
+    <span><i class="lg-eat"></i>almoço</span>
+    <span><i class="lg-shop"></i>compras</span>
+    <span><i class="lg-jp"></i>Praça do Japão</span>
+    <span><i class="lg-home"></i>sua casa</span>
+  </div>
+
+  <div class="rule"><span>a trilha do dia</span></div>
+  <div class="route">
+    <div class="stop"><div class="pin">1</div><div class="card">
+      <div class="time">09h30 &middot; Uber do Batel (~12 min)</div>
+      <h3>Café Tela Aranha</h3><span class="hood">Centro · R. Ébano Pereira</span>
+      <div class="note">Café da manhã sem pressa. Largada do rolê.</div>
+      <a class="maplink" target="_blank" href="https://www.google.com/maps/search/?api=1&query=Tela+Aranha+Rua+Ébano+Pereira+Curitiba"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>abrir no mapa</a>
+    </div></div>
+
+    <div class="stop"><div class="pin">2</div><div class="card">
+      <div class="time">10h30 &middot; a pé (5 min)</div>
+      <h3>Rua XV · “Rua das Flores”</h3><span class="hood">Centro · Calçadão</span>
+      <div class="note">A <i>rua que parece um passeio</i>: pedestres, floriculturas, ambulantes. <span class="star">★ boné aqui mesmo, ~10h45 🧢</span> (lojas de rua por todo o calçadão).</div>
+      <a class="maplink" target="_blank" href="https://www.google.com/maps/search/?api=1&query=Rua+XV+de+Novembro+Calçadão+Curitiba"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>abrir no mapa</a>
+    </div></div>
+
+    <div class="stop"><div class="pin dot">3</div><div class="card">
+      <div class="time">11h15 &middot; a pé (8 min)</div>
+      <h3>Passeio Público</h3><span class="hood">Centro · parque</span>
+      <div class="note">O parque mais antigo da cidade. Respiro verde de 30 min no meio da caminhada.</div>
+      <a class="maplink" target="_blank" href="https://www.google.com/maps/search/?api=1&query=Passeio+Público+Curitiba"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>abrir no mapa</a>
+    </div></div>
+
+    <div class="stop"><div class="pin dot">4</div><div class="card">
+      <div class="time">11h45 &middot; a pé (10 min)</div>
+      <h3>Largo da Ordem</h3><span class="hood">Setor Histórico · São Francisco</span>
+      <div class="note">A <i>praça com o Largo</i>: rua de pedra, igrejas, Praça Garibaldi, feira de artesanato. Cola na <b>livraria Sebo Vila Velha</b> ao lado.</div>
+      <a class="maplink" target="_blank" href="https://www.google.com/maps/search/?api=1&query=Largo+da+Ordem+Curitiba"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>abrir no mapa</a>
+    </div></div>
+
+    <div class="stop"><div class="pin dest">5</div><div class="card">
+      <div class="time">12h45 &middot; Uber (~7 min, norte)</div>
+      <h3>Museu do Olho · MON</h3><span class="hood">Centro Cívico · o imperdível</span>
+      <div class="note"><span class="star">★ seu “com certeza”.</span> Exposições + a arquitetura do Olho e o mirante. ~2h. <b>Sáb 10h–18h, entra até 17h30.</b></div>
+      <a class="maplink" target="_blank" href="https://www.google.com/maps/search/?api=1&query=Museu+Oscar+Niemeyer+Curitiba"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>abrir no mapa</a>
+    </div></div>
+
+    <div class="stop"><div class="pin">6</div><div class="card">
+      <div class="time">~14h30 &middot; almoço (ver cardápio abaixo ↓)</div>
+      <h3>Almoço — você escolhe</h3><span class="hood">no caminho · ou perto de casa</span>
+      <div class="note">Cardápio de opções logo abaixo pra decidir na hora — japonês ou massa, conforme a fome e onde você estiver.</div>
+    </div></div>
+
+    <div class="stop"><div class="pin dest">7</div><div class="card">
+      <div class="time">16h00 &middot; Uber &middot; golden hour</div>
+      <h3>Jardim Botânico</h3><span class="hood">o fechamento dourado</span>
+      <div class="note">Estufa icônica + jardim francês. Chegue até ~16h pra pegar a estufa (fecha ~18h) e o <b>pôr do sol</b> — a melhor hora do lugar.</div>
+      <a class="maplink" target="_blank" href="https://www.google.com/maps/search/?api=1&query=Jardim+Botânico+Curitiba"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>abrir no mapa</a>
+    </div></div>
+
+    <div class="stop"><div class="pin dot">8</div><div class="card">
+      <div class="time">~18h45 &middot; na volta &middot; shoppings abrem até 22h</div>
+      <h3>Compras &amp; jantar</h3><span class="hood">Casaco / Zara · depois japonês</span>
+      <div class="note"><span class="star">★ hora do casaco.</span> Se for de <b>Zara</b>: <b>ParkShoppingBarigüi</b> (oeste — desvio do Jardim, ~20 min de Uber, mas a casa fica no caminho de volta). Se quiser rápido e perto de casa: <b>Pátio Batel / Sh. Cristal</b>. Depois, <b>jantar japonês</b> no Batel (Hai Yo, Nakaba) ou no próprio Emy.</div>
+      <a class="maplink" target="_blank" href="https://www.google.com/maps/search/?api=1&query=Zara+ParkShoppingBarigui+Curitiba"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>Zara · Barigüi</a>
+    </div></div>
+  </div>
+
+  <!-- CARDÁPIO DE ALMOÇO -->
+  <section class="block">
+    <h2>🍜 Almoço · escolha na hora</h2>
+    <div class="lead">Marcado o que fica <b>no eixo do dia</b> (leste, a caminho do Jardim) × o que é <b>desvio pro Batel / perto de casa</b>.</div>
+
+    <div class="opt">
+      <div class="nm">Emy by Kazuo ★</div>
+      <div class="cz">Japonês do chef Kazuo Harada · Pátio Batel. Almoço tem <i>Bento Box</i> (omakase R$450 é mais pro jantar). + é shopping → casaco/boné no mesmo lugar.</div>
+      <div class="badge b-home">Batel · perto de casa</div>
+      <div class="go"><a target="_blank" href="https://www.google.com/maps/search/?api=1&query=Emy+by+Kazuo+Pátio+Batel+Curitiba">navegar →</a></div>
+    </div>
+
+    <div class="opt">
+      <div class="nm">Cantina del Délio</div>
+      <div class="cz">Massa artesanal italiana, renomada. Unidade do <b>Alto da XV</b> fica no eixo; tem outra no Batel.</div>
+      <div class="badge b-route">Alto da XV · no caminho</div>
+      <div class="go"><a target="_blank" href="https://www.google.com/maps/search/?api=1&query=Cantina+del+Délio+Alto+da+XV+Curitiba">navegar →</a></div>
+    </div>
+
+    <div class="opt">
+      <div class="nm">Hai Yo</div>
+      <div class="cz">Japonês de sushi muito bem avaliado (4.9). Salão pequeno, capricho na peça.</div>
+      <div class="badge b-home">Batel · perto de casa</div>
+      <div class="go"><a target="_blank" href="https://www.google.com/maps/search/?api=1&query=Hai+Yo+restaurante+japonês+Curitiba">navegar →</a></div>
+    </div>
+
+    <div class="opt">
+      <div class="nm">Kandoo</div>
+      <div class="cz">Japonês clássico de sushi (4.6), bom pra almoço sem firula.</div>
+      <div class="badge b-home">Água Verde/Batel</div>
+      <div class="go"><a target="_blank" href="https://www.google.com/maps/search/?api=1&query=Kandoo+Culinária+Japonesa+Curitiba">navegar →</a></div>
+    </div>
+
+    <div class="opt">
+      <div class="nm">Nakaba</div>
+      <div class="cz">Japonês do Batel, pegada contemporânea, bom pra almoço.</div>
+      <div class="badge b-home">Batel · perto de casa</div>
+      <div class="go"><a target="_blank" href="https://www.google.com/maps/search/?api=1&query=Restaurante+Nakaba+Batel+Curitiba">navegar →</a></div>
+    </div>
+
+    <div class="opt">
+      <div class="nm">Izakaya Tanuki</div>
+      <div class="cz">Izakaya (bar-restaurante japonês) — ótimo se quiser algo mais descontraído. Brilha mais à noite.</div>
+      <div class="badge b-home">Batel · perto de casa</div>
+      <div class="go"><a target="_blank" href="https://www.google.com/maps/search/?api=1&query=Izakaya+Tanuki+Curitiba">navegar →</a></div>
+    </div>
+
+    <div class="tip"><b>Logística:</b> os japoneses estão quase todos no <b>Batel (sudoeste)</b> = mesmo lado da sua casa. Se for almoçar japonês, faz sentido <b>antes de subir pro Centro</b> ou virar <b>jantar</b> na volta. Pra manter o eixo limpo no meio do dia, a <b>Cantina del Délio (Alto da XV)</b> é a que não te tira da rota. O <b>Emy</b> mata dois coelhos: almoço + compras no Pátio Batel.</div>
+  </section>
+
+  <!-- COMPRINHAS -->
+  <section class="block">
+    <h2>🛍️ Comprinhas · boné & casaco</h2>
+    <div class="lead">Junho é inverno em Curitiba (frio de verdade) — casaco cai bem. Onde resolver:</div>
+    <div class="opt">
+      <div class="nm">🧢 Boné</div>
+      <div class="cz">Mais fácil na <b>Rua XV (Calçadão)</b> de manhã (parada 2) — lojas de rua o calçadão inteiro. Ou nos shoppings perto de casa.</div>
+      <div class="badge b-route">no caminho</div>
+      <div class="go"><a target="_blank" href="https://www.google.com/maps/search/?api=1&query=Rua+XV+de+Novembro+Calçadão+Curitiba">navegar →</a></div>
+    </div>
+    <div class="opt">
+      <div class="nm">🧥 Zara ★</div>
+      <div class="cz">No <b>ParkShoppingBarigüi</b> (Mossunguê/Ecoville, <b>oeste</b>) — reaberta com o conceito novo, 2.200 m². É a única Zara da cidade; fica fora do eixo, então encaixa melhor <b>~18h45, na volta</b> (a casa fica no caminho de retorno).</div>
+      <div class="badge b-home">oeste · desvio</div>
+      <div class="go"><a target="_blank" href="https://www.google.com/maps/search/?api=1&query=Zara+ParkShoppingBarigui+Curitiba">navegar →</a></div>
+    </div>
+    <div class="opt">
+      <div class="nm">🧥 Casaco (rápido)</div>
+      <div class="cz">Se não quiser desviar pro oeste: <b>Pátio Batel</b> (premium, + Emy), <b>Shopping Curitiba</b> ou <b>Sh. Cristal</b> (coladinho no Airbnb).</div>
+      <div class="badge b-home">perto de casa</div>
+      <div class="go"><a target="_blank" href="https://www.google.com/maps/search/?api=1&query=Pátio+Batel+Curitiba">Pátio Batel →</a> &nbsp; <a target="_blank" href="https://www.google.com/maps/search/?api=1&query=Shopping+Cristal+Curitiba">Sh. Cristal →</a></div>
+    </div>
+    <div class="tip"><b>Horário sugerido:</b> 🧢 boné de manhã na Rua XV (~10h45, parada 2) · 🧥 casaco/Zara <b>~18h45</b>, na volta do Jardim Botânico. Shoppings abrem até 22h no sábado, então sem pressa.</div>
+  </section>
+
+  <!-- NOITE -->
+  <section class="block">
+    <h2>🌙 Praça do Japão (de passagem)</h2>
+    <div class="lead">Vizinha do seu Airbnb (ao lado do Shopping Cristal) — passada rápida na volta.</div>
+    <div class="opt">
+      <div class="nm">🌸 Praça do Japão</div>
+      <div class="cz">Jardim japonês, casa de chá, lago de carpas. As <b>cerejeiras só florescem em jul/ago</b> (~15 dias) — em junho é só um respiro quieto, mas tá no quarteirão.</div>
+      <div class="badge b-home">perto de casa</div>
+      <div class="go"><a target="_blank" href="https://www.google.com/maps/search/?api=1&query=Praça+do+Japão+Curitiba">navegar →</a></div>
+    </div>
+  </section>
+
+  <!-- AVISOS -->
+  <section class="block">
+    <h2>⚑ Avisos do dia</h2>
+    <ul class="warn">
+      <li><span>🗓️</span><span><b>Feira do Largo:</b> clássico é <b>domingo 9h–14h</b>; Prefeitura anunciou sexta/sábado também — confirme na hora.</span></li>
+      <li><span>👁️</span><span><b>MON fecha segunda</b>; entrada só até <b>17h30</b> — não deixe pro fim do dia.</span></li>
+      <li><span>🌸</span><span><b>Cerejeiras</b> da Praça do Japão: floração só <b>jul/ago</b>.</span></li>
+      <li><span>🧭</span><span><b>Ordem dos Ubers</b> proposital: Centro a pé → MON (norte) → leste (almoço/Jardim) → casa (sul).</span></li>
+    </ul>
+  </section>
+
+  <footer>
+    <div class="rule"><span>boa volta</span></div>
+    <div class="sig">desenhado pra um sábado sem pressa <span class="dot">●</span> Curitiba, jun&nbsp;2026</div>
+  </footer>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+  var pts = [
+    {n:"1", t:"route", c:[-25.4287,-49.2725], nm:"Café Tela Aranha", d:"09h30 · café da manhã · Centro", q:"Tela Aranha Rua Ébano Pereira Curitiba"},
+    {n:"2", t:"route", c:[-25.4296,-49.2710], nm:"Rua XV (Calçadão)", d:"10h30 · a rua-passeio + boné", q:"Rua XV de Novembro Calçadão Curitiba"},
+    {n:"3", t:"route", c:[-25.4244,-49.2700], nm:"Passeio Público", d:"11h15 · parque mais antigo", q:"Passeio Público Curitiba"},
+    {n:"4", t:"route", c:[-25.4254,-49.2735], nm:"Largo da Ordem", d:"11h45 · Setor Histórico + livraria", q:"Largo da Ordem Curitiba"},
+    {n:"5", t:"route", c:[-25.4137,-49.2693], nm:"MON · Museu do Olho", d:"12h45 · o imperdível", q:"Museu Oscar Niemeyer Curitiba"},
+    {n:"7", t:"route", c:[-25.4419,-49.2386], nm:"Jardim Botânico", d:"16h00 · golden hour", q:"Jardim Botânico Curitiba"},
+    {n:"🍜", t:"eat", c:[-25.4300,-49.2530], nm:"Cantina del Délio", d:"Massa · Alto da XV · no caminho", q:"Cantina del Délio Alto da XV Curitiba"},
+    {n:"🍣", t:"eat", c:[-25.4435,-49.2895], nm:"Emy by Kazuo", d:"Japonês + Pátio Batel (compras)", q:"Emy by Kazuo Pátio Batel Curitiba"},
+    {n:"🍣", t:"eat", c:[-25.4448,-49.2858], nm:"Hai Yo", d:"Sushi 4.9 · Batel", q:"Hai Yo restaurante japonês Curitiba"},
+    {n:"🛍️", t:"shop", c:[-25.4360,-49.2862], nm:"Shopping Curitiba", d:"Casaco / boné · perto de casa", q:"Shopping Curitiba"},
+    {n:"🛍️", t:"shop", c:[-25.4490,-49.2918], nm:"Shopping Cristal", d:"Casaco · coladinho no Airbnb", q:"Shopping Cristal Curitiba"},
+    {n:"Z", t:"shop", c:[-25.4288,-49.3175], nm:"Zara · ParkShoppingBarigüi", d:"~18h45 · casaco · oeste (desvio)", q:"Zara ParkShoppingBarigui Curitiba"},
+    {n:"🌸", t:"jp", c:[-25.4480,-49.2885], nm:"Praça do Japão", d:"De passagem · cerejeiras jul/ago", q:"Praça do Japão Curitiba"},
+    {n:"🏠", t:"home", c:[-25.4495,-49.2920], nm:"All Batel (sua casa)", d:"Base · perto do Cristal", q:"All Batel Curitiba"}
+  ];
+  var colors = {route:"#b34620", eat:"#28543f", shop:"#bd8a36", jp:"#8e3b62", home:"#33291d"};
+  var sizes  = {route:32, eat:28, shop:26, jp:26, home:28};
+
+  var map = L.map('map', {scrollWheelZoom:true});
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom:19, attribution:'&copy; OpenStreetMap'
+  }).addTo(map);
+
+  // ordem do dia: linha ligando 1→2→3→4→5→Jardim (dia) e Jardim→Zara→casa (noite)
+  var diaLine = [[-25.4287,-49.2725],[-25.4296,-49.2710],[-25.4244,-49.2700],[-25.4254,-49.2735],[-25.4137,-49.2693],[-25.4419,-49.2386]];
+  L.polyline(diaLine, {color:'#b34620', weight:3.5, dashArray:'9,8', opacity:.85}).addTo(map);
+  var noiteLine = [[-25.4419,-49.2386],[-25.4288,-49.3175],[-25.4495,-49.2920]];
+  L.polyline(noiteLine, {color:'#33291d', weight:2, dashArray:'2,9', opacity:.55}).addTo(map);
+
+  var bounds = [];
+  pts.forEach(function(p){
+    var s = sizes[p.t];
+    var icon = L.divIcon({
+      className:'',
+      html:'<div class="pinmark" style="width:'+s+'px;height:'+s+'px;background:'+colors[p.t]+'"><span>'+p.n+'</span></div>',
+      iconSize:[s,s], iconAnchor:[s/2,s]
+    });
+    var html = '<div class="pop"><b>'+p.nm+'</b><small>'+p.d+'</small>'+
+      '<a target="_blank" href="https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(p.q)+'">abrir / navegar →</a></div>';
+    L.marker(p.c,{icon:icon}).addTo(map).bindPopup(html);
+    bounds.push(p.c);
+  });
+  map.fitBounds(bounds, {padding:[40,40]});
+</script>
+</body>
+</html>
